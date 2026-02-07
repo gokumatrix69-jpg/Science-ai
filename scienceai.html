@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEURAL_LINK_v7</title>
+    <style>
+        :root { --neon: #00ff41; --bg: #050505; --dim: #003b00; --warn: #ff003c; }
+        body { background: var(--bg); color: var(--neon); font-family: 'Courier New', monospace; margin: 0; padding: 15px; overflow-x: hidden; }
+        
+        /* CRT Scanline Effect */
+        body::before { content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none; }
+        
+        .terminal { border: 2px solid var(--neon); padding: 20px; box-shadow: 0 0 15px var(--dim); min-height: 80vh; display: flex; flex-direction: column; }
+        .header { border-bottom: 2px solid var(--neon); padding-bottom: 10px; margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; display: flex; justify-content: space-between; }
+        
+        #log { flex: 1; overflow-y: auto; margin-bottom: 20px; font-size: 0.9rem; scrollbar-width: none; }
+        #log::-webkit-scrollbar { display: none; }
+        
+        .entry { margin-bottom: 15px; border-left: 2px solid var(--dim); padding-left: 10px; animation: flicker 0.1s infinite alternate; }
+        .user-prompt { color: #fff; }
+        .ai-response { color: var(--neon); }
+        .source-tag { font-size: 0.7rem; background: var(--dim); padding: 2px 5px; margin-right: 5px; }
+
+        form { display: flex; border: 1px solid var(--neon); }
+        input { background: transparent; border: none; color: var(--neon); padding: 15px; flex: 1; outline: none; font-family: 'Courier New', monospace; }
+        
+        @keyframes flicker { 0% { opacity: 0.97; } 100% { opacity: 1; } }
+        .glitch { color: var(--warn); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="terminal">
+    <div class="header">
+        <span>> NEURAL_CORE_v7.0</span>
+        <span id="clock">LINK: ACTIVE</span>
+    </div>
+
+    <div id="log">
+        <div class="entry ai-response">SYSTEM_INIT: CONNECTION ESTABLISHED. LOCAL_MEMORY LOADED. GLOBAL_WIKI_SYNC: ON.</div>
+    </div>
+
+    <form id="cmd">
+        <span style="padding: 15px;">$</span>
+        <input type="text" id="input" placeholder="ACCESS_DATABASE..." autofocus autocomplete="off">
+    </form>
+</div>
+
+<script>
+    const defaults = [
+        { k: "gravity", v: "Curvature of spacetime caused by mass/energy." },
+        { k: "dna", v: "Biological blueprint for carbon-based lifeforms." }
+    ];
+    let brain = JSON.parse(localStorage.getItem('cyber_brain')) || defaults;
+
+    const log = document.getElementById('log');
+    const form = document.getElementById('cmd');
+
+    async function getWiki(q) {
+        try {
+            const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(q)}`);
+            const data = await res.json();
+            return data.extract || null;
+        } catch { return null; }
+    }
+
+    function print(text, type, source) {
+        const div = document.createElement('div');
+        div.className = `entry ${type}`;
+        div.innerHTML = source ? `<span class="source-tag">${source}</span>${text}` : `> ${text}`;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const q = document.getElementById('input').value.trim();
+        if(!q) return;
+        
+        print(q, 'user-prompt', 'USER');
+        document.getElementById('input').value = '';
+
+        // Neural Search
+        const localMatch = brain.find(i => q.toLowerCase().includes(i.k));
+        if(localMatch) {
+            print(localMatch.v, 'ai-response', 'LOCAL_MEM');
+        } else {
+            const wiki = await getWiki(q.split(' ').pop());
+            if(wiki) {
+                print(wiki, 'ai-response', 'GLOBAL_WIKI');
+            } else {
+                print("DATA_NOT_FOUND. INJECT NEW DATA?", 'glitch', 'ERROR');
+            }
+        }
+    }
+</script>
+</body>
+</html>
